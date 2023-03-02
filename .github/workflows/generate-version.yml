@@ -18,7 +18,8 @@ jobs:
         run: |
           git config --global user.email "poingstudios@gmail.com"
           git config --global user.name "Poing Studios[bot]"
-          git -am "Bump version"
+          git add .
+          git commit -m "Bump version"
           git push
 
       - name: Create new Git tag
