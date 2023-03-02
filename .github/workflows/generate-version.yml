@@ -20,6 +20,7 @@ jobs:
           git config --global user.name "Your Name"
           git add .
           git commit -m "Bump version"
+          git push
 
       - name: Create new Git tag
         run: |
