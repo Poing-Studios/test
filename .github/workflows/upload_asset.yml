@@ -25,35 +25,40 @@ jobs:
         USERNAME: ${{ secrets.USERNAME }}
         PASSWORD: ${{ secrets.PASSWORD }}
       run: |
-        import requests
-        import os
+        #!/bin/bash
 
-        # Define os dados do asset
-        asset_data = {
-            "name": "My Asset",
-            "version": "1.0.0",
-            "category": "Tools",
-            "godot_version": "3.2.2",
-            "description": "My asset description"
-        }
+        # Define as variáveis com os dados do asset
+        NAME="My Asset"
+        VERSION="1.0.0"
+        CATEGORY="Tools"
+        GODOT_VERSION="3.2.2"
+        DESCRIPTION="My asset description"
+        USERNAME=${{ secrets.USERNAME }}
+        PASSWORD=${{ secrets.PASSWORD }}
+        ASSET_FILE="test"
 
         # Faz a solicitação de login para obter o cookie de autenticação
-        login_response = requests.post("https://godotengine.org/asset-library/api/login", data={"username": os.environ["USERNAME"], "password": os.environ["PASSWORD"]})
-        login_response.raise_for_status()
+        LOGIN_RESPONSE=$(curl -s -c cookie.txt -X POST https://godotengine.org/asset-library/api/login -d "username=${USERNAME}&password=${PASSWORD}")
 
-        # Define os headers da solicitação com o cookie de autenticação
-        headers = {"Cookie": f"gdartoken={login_response.cookies['gdartoken']}"}
-
-        # Abre o arquivo do asset e adiciona ao dicionário de dados
-        with open("path/to/asset.zip", "rb") as asset_file:
-            asset_data["file"] = asset_file.read()
+        # Obtém o cookie de autenticação do cabeçalho da resposta de login
+        GDA_TOKEN=$(cat cookie.txt | grep gdartoken | awk '{print $7}')
 
         # Faz a solicitação de upload do asset
-        upload_response = requests.post("https://godotengine.org/asset-library/api/upload", data=asset_data, headers=headers)
-        upload_response.raise_for_status()
+        UPLOAD_RESPONSE=$(curl -s -X POST https://godotengine.org/asset-library/api/upload \
+                          -H "Cookie: gdartoken=${GDA_TOKEN}" \
+                          -F "name=${NAME}" \
+                          -F "version=${VERSION}" \
+                          -F "category=${CATEGORY}" \
+                          -F "godot_version=${GODOT_VERSION}" \
+                          -F "description=${DESCRIPTION}" \
+                          -F "file=@${ASSET_FILE}")
 
         # Verifica se a solicitação foi bem-sucedida
-        if upload_response.status_code == 200:
-            print("Asset enviado com sucesso!")
-        else:
-            print("Erro ao enviar o asset: ", upload_response.json())
+        if [[ $(echo ${UPLOAD_RESPONSE} | grep -c "Asset uploaded successfully") -eq 1 ]]; then
+          echo "Asset enviado com sucesso!"
+        else
+          echo "Erro ao enviar o asset: ${UPLOAD_RESPONSE}"
+        fi
+
+        # Remove o arquivo de cookie
+        rm -f cookie.txt
