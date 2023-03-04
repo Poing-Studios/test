@@ -22,7 +22,9 @@ jobs:
 
     - name: Upload asset
       env:
-        USERNAME: ${{ secrets.USERNAME }}
-        PASSWORD: ${{ secrets.PASSWORD }}
-      run: |        
+        USERNAME: ${{ secrets.ASSET_LIBRARY_USERNAME }}
+        PASSWORD: ${{ secrets.ASSET_LIBRARY_PASSWORD }}
+        VERSION: 'godot4-v1.0.1'
+        COMMIT_HASH: 'asd21dasd'
+      run: |
         python push.py
