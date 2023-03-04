@@ -1,32 +1,29 @@
 import requests
+import json
 import os
 
-# Define os dados do asset
-asset_data = {
-    "name": "My Asset",
-    "version": "1.0.0",
-    "category": "Tools",
-    "godot_version": "3.2.2",
-    "description": "My asset description"
-}
+def get_asset_id():
+    godot_version = os.environ["VERSION"].split("-")[0]
+    asset_id_dictionary = {
+        "godot3": 1108,
+        "godot4": 0000, 
+    }
+    return str(asset_id_dictionary.get(godot_version))
 
-# Faz a solicitação de login para obter o cookie de autenticação
 login_response = requests.post("https://godotengine.org/asset-library/api/login", data={"username": os.environ["USERNAME"], "password": os.environ["PASSWORD"]})
 login_response.raise_for_status()
 
-# Define os headers da solicitação com o cookie de autenticação
-headers = {"Cookie": f"gdartoken={login_response.cookies['gdartoken']}"}
+response = json.loads(login_response.text)
 
-# Abre o arquivo do asset e adiciona ao dicionário de dados
-with open("path/to/asset.zip", "rb") as asset_file:
-    asset_data["file"] = asset_file.read()
-
-# Faz a solicitação de upload do asset
-upload_response = requests.post("https://godotengine.org/asset-library/api/upload", data=asset_data, headers=headers)
+asset_data = {
+    "token": response["token"],
+    "version_string": os.environ["VERSION"],
+    "download_commit": os.environ["COMMIT_HASH"]
+}
+upload_response = requests.post("https://godotengine.org/asset-library/api/asset/" + get_asset_id(), data=asset_data)
 upload_response.raise_for_status()
 
-# Verifica se a solicitação foi bem-sucedida
 if upload_response.status_code == 200:
-    print("Asset enviado com sucesso!")
+    print("Asset updated with success!")
 else:
-    print("Erro ao enviar o asset: ", upload_response.json())
+    print("Error while updating the asset: ", upload_response.json())
